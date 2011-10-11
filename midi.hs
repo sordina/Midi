@@ -61,7 +61,7 @@ header format tracks time_division =
  0x08          track event data (see following text)
 -}
 
-track = make_track $ concat [instrument, note_on, note_off, eot]
+track = make_track $ concat $ [instrument] ++ map (flip note_on 1) [69, 71..83] ++ [note_off, eot]
 
 make_track t = concat [track_header t, t]
 
@@ -84,14 +84,12 @@ instrument = pack [
  variable-length       4 bits                  4 bits          1 byte          1 byte
 -}
 
-note_on :: ByteString
-note_on = concat $ [
-   bs_rep 0
- ]
- ++
- [ pack [
+note_on :: Word8 -> Integer -> ByteString
+note_on note delay = concat $ [
+ bs_rep delay,
+ pack [
    0x90, -- Note on, Channel 1
-   69, -- A 440
+   note, -- A is 440
    0x60 -- Velocity
  ] ]
 
