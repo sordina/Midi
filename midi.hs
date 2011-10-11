@@ -3,7 +3,7 @@
 -- Taken from http://www.sonicspot.com/guide/midifiles.html
 
 import Data.ByteString.Char8 ()
-import Data.ByteString       (ByteString, pack, unpack, concat )
+import Data.ByteString       (ByteString, pack, unpack, concat, append )
 import GHC.Word              (Word8)
 import Numeric
 import Prelude hiding (concat)
@@ -61,7 +61,8 @@ header format tracks time_division =
  0x08          track event data (see following text)
 -}
 
-track = make_track $ concat $ [instrument] ++ map (flip note_on 1) [69, 71..83] ++ [note_off, eot]
+track = make_track $ concat $ map (flip note_on 1) [69, 71..83] ++ [note_off 69 4, eot]
+-- track = make_track $ concat $ [instrument] ++ map (flip note_on 1) [69, 71..83] ++ [note_off, eot]
 
 make_track t = concat [track_header t, t]
 
@@ -84,6 +85,12 @@ instrument = pack [
  variable-length       4 bits                  4 bits          1 byte          1 byte
 -}
 
+event :: Integer -> ByteString -> ByteString
+event delay item = bs_rep delay `append` item
+
+note_for :: Word8 -> Integer -> Integer -> ByteString
+note_for note when for = note_on note when `append` note_off note for
+
 note_on :: Word8 -> Integer -> ByteString
 note_on note delay = concat $ [
  bs_rep delay,
@@ -93,14 +100,14 @@ note_on note delay = concat $ [
    0x60 -- Velocity
  ] ]
 
-note_off :: ByteString
-note_off = concat $ [
-   bs_rep 2 -- Two Ticks at Two beats / Second (120 beats / Min default)
+note_off :: Word8 -> Integer -> ByteString
+note_off note delay = concat $ [
+   bs_rep delay -- Two Ticks at Two beats / Second (120 beats / Min default)
  ]
  ++
  [ pack [
    0x80, -- Note on, Channel 1
-   69,   -- A 440
+   note,   -- A 440
    0x60  -- Velocity
  ] ]
 
