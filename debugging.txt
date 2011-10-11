@@ -1,0 +1,63 @@
+00000000  4d 54 68 64 80 00 00 06  00 00 00 01 80 01 4d 54  |MThd..........MT|
+00000010  72 6b 00 00 00 13 4d 54  72 6b 00 00 00 0b 00 91  |rk....MTrk......|
+00000020  45 fe 02 81 01 fe ff 2f  00                       |E....../.|
+00000029
+
+          Header -> MThd..........
+00000000  4d 54 68 64  Magic
+          00 00 00 06  Magic
+          00 00        Format - Single Track
+          00 01        Number of Tracks
+          80 01        Time Division
+                       -> showBins $ pack [0x80, 0x01]
+                       -> "10000000 00000001"
+                       -> One tick per beat
+
+          Track Header -> MTrk....
+          4d 54 72 6b  Magic
+          00 00 00 0b  Chunk Size
+                       -> Should be 11 -- Okay
+          
+          Track Data -> ..E....../.
+          00           -> Delta Time
+          91           -> Event Type, Channel
+                       -> Note On, 1
+
+          45           -> Note Number -> 69
+          fe           -> Velocity
+          
+          Track Data
+          02           -> Delta Time (1 Second)
+          81           -> Event Type, Channel
+                       -> Note Off, 1
+          01           -> Note Number -> 01  ---- !!! Bug non-matching note
+          fe           -> Velocity
+
+
+          !!! Bug !!! No delta time
+
+          ff           -> Meta Event
+          2f           -> End of Track Type
+00000020  00           -> 0 length
+
+
+
+
+
+-- Example
+
+00000000  4d 54 68 64 00 00 00 06  00 00 00 01 00 80 4d 54  |MThd..........MT|
+00000010  72 6b 00 00 00 2e 00 c1  18 00 91 37 60 00 90 3c  |rk.........7`..<|
+00000020  60 81 00 3c 00 00 3e 60  81 00 3e 00 00 40 60 00  |`..<..>`..>..@`.|
+00000030  91 37 00 00 91 39 60 81  00 90 40 00 00 91 39 00  |.7...9`...@...9.|
+00000040  00 ff 2f 00                                       |../.|
+00000044
+
+
+
+-- Me
+
+00000000  4d 54 68 64 00 00 00 06  00 00 00 01 00 01 4d 54  |MThd..........MT|
+00000010  72 6b 00 00 00 0f 00 c1  18 00 91 45 fe 02 81 45  |rk.........E...E|
+00000020  fe 00 ff 2f 00                                    |.../.|
+00000025
