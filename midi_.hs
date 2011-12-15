@@ -1,77 +1,13 @@
-{-# Language OverloadedStrings, GADTs #-}
-
-module Midi (
-
-  Music(..),
-  write_music,
-  write_melody
-
-) where
+{-# Language OverloadedStrings #-}
 
 -- Taken from http://www.sonicspot.com/guide/midifiles.html
 
-import Control.Arrow (second)
 import Data.ByteString.Char8 ()
 import Data.ByteString       (ByteString, pack, unpack, concat, append )
 import GHC.Word              (Word8)
 import Numeric
 import Prelude hiding (concat)
-import qualified Prelude as P
 import qualified Data.ByteString as BS
-
-type Note = (Integer, Word8)
-
-data Music where
-  Melody   :: [Note]             -> Music
-  Lone     :: Note               -> Music
-  Pair     :: (Note, Note)       -> Music
-  Tripple  :: (Note, Note, Note) -> Music
-  Parallel :: [Music]            -> Music
-  Sequence :: [Music]            -> Music
-
-  Sharp    :: Music              -> Music
-  Flat     :: Music              -> Music
-
-  A        :: Music
-  B        :: Music
-  C        :: Music
-  D        :: Music
-  E        :: Music
-  F        :: Music
-  G        :: Music
-
-simplify :: Music -> [[Note]]
-simplify (Melody   x    )  = [x]
-simplify (Lone     x    )  = [[x]]
-simplify (Pair    (x,y  )) = [[x,y]]
-simplify (Tripple (x,y,z)) = [[x,y,z]]
-simplify (Parallel xs   )  = concatMap simplify xs
-simplify (Sequence xs   )  = [ P.concat $ concatMap simplify xs ]
-simplify (Sharp    x    )  = mmap (second (+1))         (simplify x)
-simplify (Flat     x    )  = mmap (second (subtract 1)) (simplify x)
-simplify A                 = pitch 0
-simplify B                 = pitch 2
-simplify C                 = pitch 3
-simplify D                 = pitch 5
-simplify E                 = pitch 7
-simplify F                 = pitch 8
-simplify G                 = pitch 10
-
-pitch n = [[(1,n)]]
-
-mmap f = map (map f)
-
-write_music :: Music -> IO ()
-write_music = undefined -- write_melody  . normalise
-
-normalise :: [[Note]] -> [Note]
-normalise = undefined
-
-write_melody :: String -> Word8 -> Integer -> [(Integer, Word8)] -> IO ()
-write_melody path dpb eot_delay notes = BS.writeFile path $
-  concat [ header Single 1 (Beats dpb), note_data, eot eot_delay ]
-  where
-    note_data = make_track $ concat $ map (uncurry (flip note)) notes
 
 main = BS.writeFile "test.mid" song
 
