@@ -18,6 +18,7 @@ import Numeric
 import Prelude hiding (concat)
 import qualified Prelude as P
 import qualified Data.ByteString as BS
+import TimeSet
 
 type Note = (Integer, Word8)
 
