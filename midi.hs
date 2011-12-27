@@ -3,8 +3,7 @@
 module Midi (
 
   Music(..),
-  write_music,
-  write_melody
+  make_music
 
 ) where
 
@@ -12,13 +11,20 @@ module Midi (
 
 import Control.Arrow (second)
 import Data.ByteString.Char8 ()
-import Data.ByteString       (ByteString, pack, unpack, concat, append )
+import Data.ByteString       (ByteString, pack, concat, append )
 import GHC.Word              (Word8)
-import Numeric
 import Prelude hiding (concat)
 import qualified Prelude as P
 import qualified Data.ByteString as BS
 import TimeSet
+
+convertMusic :: Music -> [[(Integer,NoteDetails)]]
+convertMusic = map (concatMap convert) . simplify
+
+convert :: Note -> [(Integer, NoteDetails)]
+convert (delay, note) = [(0, NoteOn note), (delay, NoteOff note)]
+
+data NoteDetails = NoteOn Word8 | NoteOff Word8 deriving (Show, Ord, Eq)
 
 type Note = (Integer, Word8)
 
@@ -42,6 +48,7 @@ data Music where
   G        :: Music
 
 simplify :: Music -> [[Note]]
+
 simplify (Melody   x    )  = [x]
 simplify (Lone     x    )  = [[x]]
 simplify (Pair    (x,y  )) = [[x,y]]
@@ -62,24 +69,14 @@ pitch n = [[(1,n)]]
 
 mmap f = map (map f)
 
-write_music :: Music -> IO ()
-write_music = undefined -- write_melody  . normalise
+make_music :: Word8 -> Integer -> Music -> ByteString
+make_music dpb eot_delay = make_melody dpb eot_delay . normalize . convertMusic
 
-normalise :: [[Note]] -> [Note]
-normalise = undefined
-
-write_melody :: String -> Word8 -> Integer -> [(Integer, Word8)] -> IO ()
-write_melody path dpb eot_delay notes = BS.writeFile path $
+make_melody :: Word8 -> Integer -> [(Integer, NoteDetails)] -> ByteString
+make_melody dpb eot_delay notes =
   concat [ header Single 1 (Beats dpb), note_data, eot eot_delay ]
   where
-    note_data = make_track $ concat $ map (uncurry (flip note)) notes
-
-main = BS.writeFile "test.mid" song
-
---- Song!
-
-song :: ByteString
-song = concat [ header Single 1 (Beats 2), track, eot 0 ]
+    note_data = make_track $ concat $ map metaNote notes
 
 -- Types
 
@@ -155,6 +152,9 @@ instrument = pack [
 event :: Integer -> ByteString -> ByteString
 event delay item = bs_rep delay `append` item
 
+metaNote (delay, NoteOn note) = note_on   note delay
+metaNote (delay, NoteOff note) = note_off note delay
+
 note_for :: Word8 -> Integer -> Integer -> ByteString
 note_for note when for = note_on note when `append` note_off note for
 
@@ -210,11 +210,6 @@ eot when = concat [
  100000        00010000 00000000 00000000      C08000  11000000 10000000 00000000
 -}
 
-prop_bs_rep =
-    bs_rep 0x00      == pack [00]
- && bs_rep 0xC8      == pack [0x81, 0x48]
- && bs_rep 0x100000  == pack [0xC0,0x80,0x00]
-
 bs_rep :: Integer -> ByteString
 bs_rep = pack . reverse . fix . bin_rep 0x80
 
@@ -226,19 +221,6 @@ bin_rep l n
 
 fix :: [Integer] -> [Word8]
 fix = map fromIntegral . zipWith (+) (0 : repeat 0x80)
-
-{--- Weirdness
- *Main> components 6 12312312312312
-   [248,113,0,175,50,11]
-
- *Main> BS.pack $ components 6 12312312312312
-   "\248"
-
- *Main> BS.pack $ [248,113,0,175,50,11]
-   "\248q\NUL\175\&2\v"
--}
-
-prop_bin_num = bin_num 4 7 == pack [0,0,0,7]
 
 bin_num :: Int -> Integer -> ByteString
 bin_num len num = (pack . map fromIntegral . reverse) (components l n)
@@ -252,21 +234,3 @@ components c n
  | c == 1              = error "Number too long for byte-length"
  | otherwise           = m : components (c-1) d
    where (d,m) = n `divMod` (2^8)
-
--- Debugging / property utils
-
-showBin :: Int -> String
-showBin = flip showsBin ""
-
-showsBin :: Int -> ShowS
-showsBin = showIntAtBase 2 bins
-
-lead :: String -> String
-lead s = replicate (8 - length s) '0' ++ s
-
-showBins :: ByteString -> String
-showBins = concatMap (lead . showBin) . map fromIntegral . unpack
-
-bins 1 = '1'
-bins 0 = '0'
-bins _ = error "Only shows 0s and 1s"

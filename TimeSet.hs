@@ -1,11 +1,6 @@
 {-# Language GADTs, NoMonomorphismRestriction #-}
 
-module TimeSet (
-
-  normalize
-
-  ) where
-
+module TimeSet ( normalize ) where
 
 import Data.Set   (fromAscList, toAscList, unions)
 import Data.Maybe
