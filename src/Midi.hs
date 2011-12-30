@@ -3,8 +3,9 @@
 module Midi (
 
   make_music,
+  write_music,
   Note,
-  Music(..)
+  Music(..),
 
 ) where
 
@@ -17,6 +18,9 @@ import Prelude hiding (concat)
 import qualified Data.ByteString as BS
 
 import Music
+
+write_music :: FilePath -> Word8 -> Integer -> Music Note -> IO ()
+write_music path dpb eot_delay = BS.writeFile path . make_music dpb eot_delay
 
 make_music :: Word8 -> Integer -> Music Note -> ByteString
 make_music dpb eot_delay = make_melody dpb eot_delay . events

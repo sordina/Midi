@@ -21,17 +21,17 @@ scratch-pad for musical ideas, and not get muddled down in details.
 ## A simple example:
 
 ```haskell
-import Midi
-import Data.List (tails)
 import Data.List.Split
-import qualified Data.ByteString as BS (writeFile)
+import Midi
 
-main      = musicFile song
+main = write_music "test3.mid" 1 1 song
 
-song      = Higher (-20) $ Sequence $ take 40 $ concatMap triads fiths
-musicFile = BS.writeFile "Foo3.mid" . make_music 1 2
-minor     = concat . iterate (map (Higher 12)) $ [A,B,C,D,E,F,G]
-fiths     = iterate (drop 4) minor
-triads    = take 8 . map ( Parallel . take 3 . every 3 ) . tails
-every n   = map head . splitEvery n
+song    = Parallel [under, over]
+under   = Higher (-24) $ Longer 2 $ Longer 2 $ Sequence [ Sequence chord, Longer 4 (Parallel chord) ]
+over    = Sequence $ replicate 2 $ Sequence $ take 8 major
+chord   = take 4 $ every 2 major
+minor   = concat $ iterate (map oct) [A,B,C,D,E,F,G]
+major   = drop 2 $ minor
+oct     = Higher 12
+every n = map head . splitEvery n
 ```
