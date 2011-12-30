@@ -56,17 +56,18 @@ data Pitch      = On Word8    | Off Word8 deriving (Ord, Eq, Show)
 type PitchEvent = (Integer, Pitch)
 
 simplify :: Music Note -> SimpleMusic Note
-simplify (Melody m) = Mel m
-simplify (Chord  c) = Par $ map (Mel . return) c
-simplify (Lone   n) = Mel [n]
-simplify (Pair (a,b)) = Par [Mel [a], Mel [b]]
-simplify (Tripple (a,b,c)) = Par [Mel [a], Mel [b], Mel [c]]
-simplify (Parallel m) = Par $ map simplify m
-simplify (Sequence m) = Seq $ map simplify m
-simplify (Sharp m) = raise 1 $ simplify m
-simplify (Flat m) = raise (-1) $ simplify m
-simplify (Higher n m) = raise n $ simplify m
-simplify (Longer n m) = lengthen n $ simplify m
+
+simplify (Melody m)         = Mel m
+simplify (Chord  c)         = Par $ map (Mel . return) c
+simplify (Lone   n)         = Mel [n]
+simplify (Pair (a,b))       = Par [Mel [a], Mel [b]]
+simplify (Tripple (a,b,c))  = Par [Mel [a], Mel [b], Mel [c]]
+simplify (Parallel m)       = Par $ map simplify m
+simplify (Sequence m)       = Seq $ map simplify m
+simplify (Sharp m)          = raise 1 $ simplify m
+simplify (Flat m)           = raise (-1) $ simplify m
+simplify (Higher n m)       = raise n $ simplify m
+simplify (Longer n m)       = lengthen n $ simplify m
 
 simplify A_ = pitch 1
 simplify A  = pitch 2
