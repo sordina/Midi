@@ -36,3 +36,5 @@ major   = drop 2 $ minor
 oct     = Higher 12
 every n = map head . splitEvery n
 ```
+
+Outout: [MIDI Download](https://github.com/sordina/Midi/blob/master/examples/test3.mid?raw=true)
