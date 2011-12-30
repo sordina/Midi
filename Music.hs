@@ -3,6 +3,9 @@
 module Music (
 
     Music(..),
+    Note,
+    Pitch(..),
+    PitchEvent,
     events
 
   ) where
@@ -24,7 +27,7 @@ data Music a where
   Flat     :: Music a     -> Music a
 
   Higher   :: Word8       -> Music a -> Music a
-  Longer   :: Word8       -> Music a -> Music a
+  Longer   :: Integer     -> Music a -> Music a
 
   A_       :: Music a
   A        :: Music a
@@ -48,10 +51,9 @@ data Music a where
 
 data SimpleMusic a = Seq [SimpleMusic a] | Par [SimpleMusic a] | Mel [a]
 
-type Note       = (Word8, Word8) -- Pitch, Length
+type Note       = (Integer, Word8) -- Length, Pitch
 data Pitch      = On Word8    | Off Word8 deriving (Ord, Eq, Show)
-type PitchEvent = (Word8, Pitch)
-data NoteEvent  = NoteOn Note | NoteOff Note deriving (Ord, Eq, Show)
+type PitchEvent = (Integer, Pitch)
 
 simplify :: Music Note -> SimpleMusic Note
 simplify (Melody m) = Mel m
@@ -84,14 +86,11 @@ simplify G_ = pitch 15
 simplify G  = pitch 16
 simplify G' = pitch 17
 
+pitch :: Word8 -> SimpleMusic Note
 pitch n = Mel [(1, n+60)] -- Don't start pitches at 0...
 
 pitchEventify :: Note -> [PitchEvent]
-pitchEventify (a,b) = [(0, On a), (b, Off a)]
-
-noteEventify :: PitchEvent -> NoteEvent
-noteEventify (a, On  n) = NoteOn  (n, a)
-noteEventify (a, Off n) = NoteOff (n, a)
+pitchEventify (a,b) = [(0, On b), (a, Off b)]
 
 musicEventify :: SimpleMusic Note -> SimpleMusic PitchEvent
 musicEventify (Seq m) = Seq . map musicEventify $ m
@@ -101,12 +100,12 @@ musicEventify (Mel m) = Mel $ concatMap pitchEventify m
 raise :: Word8 -> SimpleMusic Note -> SimpleMusic Note
 raise n (Seq m) = Seq . map (raise n) $ m
 raise n (Par m) = Par . map (raise n) $ m
-raise n (Mel m) = Mel $ map (first (+n)) m
+raise n (Mel m) = Mel $ map (second (+n)) m
 
-lengthen :: Word8 -> SimpleMusic Note -> SimpleMusic Note
+lengthen :: Integer -> SimpleMusic Note -> SimpleMusic Note
 lengthen n (Seq m) = Seq . map (lengthen n) $ m
 lengthen n (Par m) = Par . map (lengthen n) $ m
-lengthen n (Mel m) = Mel $ map (second (*n)) m
+lengthen n (Mel m) = Mel $ map (first (*n)) m
 
 sequentialize :: SimpleMusic PitchEvent -> [PitchEvent]
 sequentialize (Seq m) = concatMap sequentialize m
@@ -115,5 +114,5 @@ sequentialize (Mel m) = m
 
 -- timing
 
-events :: Music Note -> [NoteEvent]
-events = simplify >>> musicEventify >>> sequentialize >>> map noteEventify
+events :: Music Note -> [PitchEvent]
+events = simplify >>> musicEventify >>> sequentialize

@@ -7,6 +7,8 @@ import Text.Show.Pretty (ppDoc)
 
 main = musicFile song
 
+song = Higher (-20) $ Sequence $ take 40 $ concatMap triads fiths
+
 musicFile = BS.writeFile "Foo3.mid" . make_music 1 2
 
 minor = concat . iterate (map (Higher 12)) $ [A,B,C,D,E,F,G]
@@ -14,8 +16,6 @@ minor = concat . iterate (map (Higher 12)) $ [A,B,C,D,E,F,G]
 fiths = iterate (drop 4) minor
 
 triads = take 8 . map ( Parallel . take 3 . every 3 ) . tails
-
-song = Sequence $ take 100 $ concatMap triads fiths
 
 
 -- list utils
