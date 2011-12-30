@@ -1,76 +1,72 @@
-{-# Language OverloadedStrings, GADTs #-}
+{-# Language OverloadedStrings #-}
 
 module Midi (
 
-  Music(..),
   make_music
 
 ) where
 
 -- Taken from http://www.sonicspot.com/guide/midifiles.html
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Data.ByteString.Char8 ()
 import Data.ByteString       (ByteString, pack, concat, append )
 import GHC.Word              (Word8)
 import Prelude hiding (concat)
 import qualified Prelude as P
 import qualified Data.ByteString as BS
-import TimeSet
+import Data.List (transpose)
 
-convertMusic :: Music -> [[(Integer,NoteDetails)]]
-convertMusic = map (concatMap convert) . simplify
+import TimeSet
+import Music
+
+convertMusic :: Music -> [(Integer,NoteDetails)]
+convertMusic = concatMap convert . simplify
 
 convert :: Note -> [(Integer, NoteDetails)]
-convert (delay, note) = [(0, NoteOn note), (delay, NoteOff note)]
+convert (len, note) = [(0, NoteOn note), (len, NoteOff note)]
 
 data NoteDetails = NoteOn Word8 | NoteOff Word8 deriving (Show, Ord, Eq)
 
 type Note = (Integer, Word8)
 
-data Music where
-  Melody   :: [Note]             -> Music
-  Lone     :: Note               -> Music
-  Pair     :: (Note, Note)       -> Music
-  Tripple  :: (Note, Note, Note) -> Music
-  Parallel :: [Music]            -> Music
-  Sequence :: [Music]            -> Music
+simplify :: Music Note -> [a]
 
-  Sharp    :: Music              -> Music
-  Flat     :: Music              -> Music
+simplify (Melody   x    )  = x
+simplify (Lone     x    )  = [x]
+simplify (Pair    (x,y  )) = [x,y]
+simplify (Tripple (x,y,z)) = [x,y,z]
+simplify (Parallel xs   )  = normalize $ transpose  $ map simplify xs
+simplify (Sequence xs   )  = normalize $ [ P.concat $ map simplify xs ]
+simplify (Sharp    x    )  = map (second (+1))         (simplify x)
+simplify (Flat     x    )  = map (second (subtract 1)) (simplify x)
+simplify (Higher   x   m)  = map (second (+x))         (simplify m)
+simplify (Longer   x   m)  = map (first  (*x))         (simplify m)
 
-  A        :: Music
-  B        :: Music
-  C        :: Music
-  D        :: Music
-  E        :: Music
-  F        :: Music
-  G        :: Music
-
-simplify :: Music -> [[Note]]
-
-simplify (Melody   x    )  = [x]
-simplify (Lone     x    )  = [[x]]
-simplify (Pair    (x,y  )) = [[x,y]]
-simplify (Tripple (x,y,z)) = [[x,y,z]]
-simplify (Parallel xs   )  = concatMap simplify xs
-simplify (Sequence xs   )  = [ P.concat $ concatMap simplify xs ]
-simplify (Sharp    x    )  = mmap (second (+1))         (simplify x)
-simplify (Flat     x    )  = mmap (second (subtract 1)) (simplify x)
+simplify A_                = pitch (-1)
 simplify A                 = pitch 0
+simplify A'                = pitch 1
+simplify B_                = pitch 1
 simplify B                 = pitch 2
 simplify C                 = pitch 3
+simplify C'                = pitch 4
+simplify D_                = pitch 4
 simplify D                 = pitch 5
+simplify D'                = pitch 6
+simplify E_                = pitch 6
 simplify E                 = pitch 7
 simplify F                 = pitch 8
+simplify F'                = pitch 9
+simplify G_                = pitch 19
 simplify G                 = pitch 10
+simplify G'                = pitch 11
 
-pitch n = [[(1,n)]]
+pitch n = [(1, n+60)] -- Don't start pitches at 0...
 
 mmap f = map (map f)
 
 make_music :: Word8 -> Integer -> Music -> ByteString
-make_music dpb eot_delay = make_melody dpb eot_delay . normalize . convertMusic
+make_music dpb eot_delay = make_melody dpb eot_delay . convertMusic
 
 make_melody :: Word8 -> Integer -> [(Integer, NoteDetails)] -> ByteString
 make_melody dpb eot_delay notes =
@@ -123,18 +119,13 @@ header format tracks time_division =
  0x08          track event data (see following text)
 -}
 
--- [instrument]
-track = make_track $ concat $ map (flip note 1) notes -- (flip note_on 1) notes ++ map (flip note_off 1) notes ++ [eot 1]
-  where
-    notes = take 20 [69, 72..]
-
 make_track t = concat [track_header t, t]
 
 track_header :: Track -> ByteString
 track_header track = concat $
- ["MTrk"] -- Magic
- ++
- [bin_num 4 $ fromIntegral (BS.length track)]
+ [ "MTrk" -- Magic
+ , bin_num 4 $ fromIntegral (BS.length track)
+ ]
 
 
 instrument :: ByteString
@@ -152,19 +143,16 @@ instrument = pack [
 event :: Integer -> ByteString -> ByteString
 event delay item = bs_rep delay `append` item
 
-metaNote (delay, NoteOn note) = note_on   note delay
+metaNote (delay, NoteOn  note) = note_on  note delay
 metaNote (delay, NoteOff note) = note_off note delay
-
-note_for :: Word8 -> Integer -> Integer -> ByteString
-note_for note when for = note_on note when `append` note_off note for
 
 note_on :: Word8 -> Integer -> ByteString
 note_on note delay = concat $ [
  bs_rep delay,
  pack [
    0x90, -- Note on, Channel 1
-   note, -- A is 440
-   0x60 -- Velocity
+   note,
+   0x60  -- Velocity
  ] ]
 
 note_off :: Word8 -> Integer -> ByteString
@@ -174,12 +162,9 @@ note_off note delay = concat $ [
  ++
  [ pack [
    0x80, -- Note on, Channel 1
-   note,   -- A 440
+   note,
    0x60  -- Velocity
  ] ]
-
-note :: Word8 -> Integer -> ByteString
-note note delay = concat [ note_on note 0, note_off note delay]
 
 {-
  End Of Track
