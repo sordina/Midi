@@ -2,8 +2,7 @@
 
 module TimeSet ( normalize ) where
 
-import Data.Set   (fromAscList, toAscList, unions)
-import Data.Maybe
+import Data.Set (fromAscList, toAscList, unions)
 import Control.Arrow ((>>>))
 
 
@@ -13,13 +12,7 @@ normalize = map absolute >>> norm >>> relative
 norm :: (Eq x, Ord x, Eq y, Ord y) => [[(x,y)]] -> [(x,y)]
 norm = toAscList . unions . map fromAscList
 
-absolute = catMaybes . a
-  where
-    a :: Num a => [(a,b)] -> [Maybe (a,b)]
-    a = scanl f Nothing
-
-f Nothing       x    = Just x
-f (Just (a,_)) (b,y) = Just (a+b, y)
+absolute = scanl1 f where f (a,_) (b,y) = (a+b, y)
 
 relative :: Num a => [(a,b)] -> [(a,b)]
 relative [] = []
