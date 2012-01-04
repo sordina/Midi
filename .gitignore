@@ -1,2 +1,3 @@
 *.mid
+dist/
 !examples/*
