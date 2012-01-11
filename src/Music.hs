@@ -10,7 +10,7 @@ module Music (
 
   ) where
 
-import TimeSet
+import Midi.TimeSet
 import GHC.Word
 import Control.Arrow (first, second, (>>>))
 

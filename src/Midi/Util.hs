@@ -1,4 +1,4 @@
-module Util (
+module Midi.Util (
 
   every,
   drops

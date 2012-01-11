@@ -1,10 +1,9 @@
 {-# Language GADTs, NoMonomorphismRestriction #-}
 
-module TimeSet ( normalize ) where
+module Midi.TimeSet ( normalize ) where
 
 import Data.Set (fromAscList, toAscList, unions)
 import Control.Arrow ((>>>))
-
 
 normalize :: (Ord b, Ord a, Num a) => [[(a, b)]] -> [(a, b)]
 normalize = map absolute >>> norm >>> relative

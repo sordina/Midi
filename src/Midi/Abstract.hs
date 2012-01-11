@@ -1,4 +1,4 @@
-module Abstract (
+module Midi.Abstract (
 
   chromatic,
   atonal,
@@ -14,7 +14,7 @@ module Abstract (
 
 
 import Music
-import Util (every, drops)
+import Midi.Util (every, drops)
 import GHC.Word (Word8)
 
 chromatic :: Music a -> [ Music a ]
