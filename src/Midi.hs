@@ -6,6 +6,7 @@ module Midi (
   write_music,
   Note,
   Music(..),
+  events
 
 ) where
 
