@@ -1,5 +1,5 @@
 import Midi
-import Abstract
+import Midi.Abstract
 import Prelude hiding (min)
 import Data.List.Split (splitEvery)
 
