@@ -1,3 +1,4 @@
 *.mid
 dist/
 !examples/*
+hugsin
