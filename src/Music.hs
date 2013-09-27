@@ -47,7 +47,7 @@ data Music a where
   G        :: Music a
   G'       :: Music a
 
-  deriving (Show, Eq, Ord, Functor)
+  deriving (Read, Show, Eq, Ord, Functor)
 
 data SimpleMusic a = Seq [SimpleMusic a] | Par [SimpleMusic a] | Mel [a]
 

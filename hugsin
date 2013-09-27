@@ -1,0 +1,2 @@
+:load src/Midi/Util.hs
+putStr "prop_equiv: " >> Test.QuickCheck.quickCheck prop_equiv
